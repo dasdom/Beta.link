@@ -8,17 +8,13 @@ on:
       - "*"
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-18.04
     steps:
+      - name: Checkout Source
+        uses: actions/checkout@v1
       - name: Build Site
         run: swift build
-
-  deploy:
-    runs-on: ubuntu-18.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v1
       - name: Deploy Content
         uses: peaceiris/actions-gh-pages@v2
         env:

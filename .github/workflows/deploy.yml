@@ -14,12 +14,12 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v1
       - name: Build Site
-        run: swift build
+        run: swift run BetaLink
       - name: Deploy Content
         uses: peaceiris/actions-gh-pages@v2
         env:
           PERSONAL_TOKEN: ${{ secrets.DEPLOYMENT_TOKEN }}
-          EXTERNAL_REPOSITORY: Bearologics/Beta.link-Output
+          EXTERNAL_REPOSITORY: Bearologics/Beta.link.static
           PUBLISH_BRANCH: master
           PUBLISH_DIR: ./Output
         with:

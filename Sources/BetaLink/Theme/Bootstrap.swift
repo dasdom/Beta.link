@@ -81,7 +81,8 @@ private struct FoundationHTMLFactory<Site: Website>: HTMLFactory {
 
     func makeItemHTML(for item: Item<Site>,
                       context: PublishingContext<Site>) throws -> HTML {
-        HTML(
+        let metaData = item.metadata as? BetaLink.ItemMetadata
+        return HTML(
             .lang(context.site.language),
             .head(for: item, on: context.site),
             .body(
@@ -91,6 +92,8 @@ private struct FoundationHTMLFactory<Site: Website>: HTMLFactory {
                         .text(item.title)
                     ),
                     .class("container"),
+                    .itemAuthorTags(for: item, on: context.site),
+                    .embedly(url: metaData?.url ?? ""),
                     .contentBody(item.body)
                 ),
                 .footer(for: context.site)
@@ -242,12 +245,6 @@ private extension Node where Context == HTML.BodyContext {
     }
     
     static func itemList<T: Website>(for items: [Item<T>], on site: T) -> Node {
-        let dateFormatter: DateFormatter = {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            return formatter
-        }()
-        
         return forEach(Array(items).chunked(into: 3)) { chunk in
             .div(.class("row"), forEach(chunk) { item in
                 let metaData = item.metadata as? BetaLink.ItemMetadata
@@ -259,50 +256,50 @@ private extension Node where Context == HTML.BodyContext {
                             .class("blog-post-title"),
                             .a(
                                 .class("text-light"),
-                                .href(metaData?.url ?? ""),
+                                .href(item.path),
                                 .text(item.title)
                             )
                         ),
-                        .div(
-                            .class("blog-post-date text-secondary"),
-                            .element(named: "time", nodes: [
-                                .attribute(named: "datetime", value: item.date.description),
-                                .text(dateFormatter.string(from: item.date))
-                            ]),
-                            .span(
-                                .attribute(named: "rel", value: "author"),
-                                .text(" by "),
-                                {
-                                    if metaData?.authorUrl == nil {
-                                        return .text(metaData?.author ?? "")
-                                    } else {
-                                        return .a(.href(metaData?.authorUrl ?? ""), .text(metaData?.author ?? ""))
-                                    }
-                                }()
-                            )
-                        ),
-                        .div(
-                            .class("blog-post-tags text-secondary"),
-                            .forEach(item.tags) { tag in
-                                .p(
-                                    .class("badge badge-tags"),
-                                    .a(.href(site.path(for: tag)), .text(tag.string))
-                                )
-                            }
-                        ),
-                        .div(
-                            .blockquote(
-                                .class("embedly-card"),
-                                .attribute(named: "data-card-controls", value: "0"),
-                                .attribute(named: "data-card-theme", value: "dark"),
-                                .h4(.a(.href(metaData?.url ?? "")))
-                            )
-                        ),
+                        .itemAuthorTags(for: item, on: site),
+                        .embedly(url: metaData?.url ?? ""),
                         .p(.contentBody(item.body))
                     )
                 ))
             })
         }
+    }
+    
+    static func itemAuthorTags<T: Website>(for item: Item<T>, on site: T) -> Node {
+        let metaData = item.metadata as? BetaLink.ItemMetadata
+        return .group(
+            .div(
+                .class("blog-post-date text-secondary"),
+                .element(named: "time", nodes: [
+                    .attribute(named: "datetime", value: item.date.description),
+                    .text(DateFormatter.mediumDateStyleFormatter.string(from: item.date))
+                ]),
+                .span(
+                    .attribute(named: "rel", value: "author"),
+                    .text(" by "),
+                    {
+                        if metaData?.authorUrl == nil {
+                            return .text(metaData?.author ?? "")
+                        } else {
+                            return .a(.href(metaData?.authorUrl ?? ""), .text(metaData?.author ?? ""))
+                        }
+                    }()
+                )
+            ),
+            .div(
+                .class("blog-post-tags text-secondary"),
+                .forEach(item.tags) { tag in
+                    .p(
+                        .class("badge badge-tags"),
+                        .a(.href(site.path(for: tag)), .text(tag.string))
+                    )
+                }
+            )
+        )
     }
 
     static func tagList<T: Website>(for item: Item<T>, on site: T) -> Node {
@@ -343,6 +340,17 @@ private extension Node where Context == HTML.BodyContext {
             )
         )
     }
+    
+    static func embedly(url: String) -> Node {
+        .div(
+            .blockquote(
+                .class("embedly-card"),
+                .attribute(named: "data-card-controls", value: "0"),
+                .attribute(named: "data-card-theme", value: "dark"),
+                .h4(.a(.href(url)))
+            )
+        )
+    }
 }
 
 extension Array {
@@ -351,4 +359,12 @@ extension Array {
             Array(self[$0 ..< Swift.min($0 + size, count)])
         }
     }
+}
+
+private extension DateFormatter {
+    static let mediumDateStyleFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter
+    }()
 }

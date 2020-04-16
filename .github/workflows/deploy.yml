@@ -1,0 +1,25 @@
+name: Build and deploy Beta.link
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "*"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-18.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Deploy Content
+        uses: peaceiris/actions-gh-pages@v2
+        env:
+          PERSONAL_TOKEN: ${{ secrets.DEPLOYMENT_TOKEN }}
+          EXTERNAL_REPOSITORY: Bearologics/Beta.link-Output
+          PUBLISH_BRANCH: master
+          PUBLISH_DIR: ./Output
+        with:
+          commitMessage: ${{ github.event.head_commit.message }}
